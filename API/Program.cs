@@ -30,4 +30,23 @@ var app = builder.Build(); //things before this line are services and things aft
 
 app.MapControllers();
 
+//the below code applies the remaining migrations to DB and creates a new DB if DB doednot exists.
+try {
+  // using is used : any code that we create using this variable scope once this is finished executing then framework will dispose any services that we have used.
+  using var scope = app.Services.CreateScope();
+  var services = scope.ServiceProvider;
+  //create context
+  var context = services.GetRequiredService<StoreContext>();
+  
+  //applies migrations
+  await context.Database.MigrateAsync();
+
+  //seeds data into DB
+  await StoreContextSeed.SeedDataAsync(context);
+
+} catch (Exception ex) {
+  Console.WriteLine(ex);
+  throw;
+}
+
 app.Run();
