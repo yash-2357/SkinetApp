@@ -1,6 +1,8 @@
-﻿using Core.Entities;
+﻿using System.ComponentModel.Design.Serialization;
+using Core.Entities;
 using Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.Data {
   public class ProductRepository : IProductRepository {
@@ -16,12 +18,39 @@ namespace Infrastructure.Data {
       _context.Products.Remove(product);
     }
 
+    public async Task<IReadOnlyList<string>> GetBrandsAsync() {
+      return await _context.Products.Select(p => p.Brand).Distinct().ToListAsync();
+    }
+
     public async Task<Product?> GetProductByIdAsync(int id) {
       return await _context.Products.FindAsync(id);
     }
 
     public async Task<IReadOnlyList<Product>> GetProductsAsync() {
       return await _context.Products.ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<Product>> GetProductsAsync(string? brand, string? type, string? sort) {
+      var query = _context.Products.AsQueryable();
+      if (!brand.IsNullOrEmpty()) {
+        query = query.Where(p => p.Brand.Equals(brand));
+      }
+      if (!type.IsNullOrEmpty()) {
+        query = query.Where(p => p.Type.Equals(type));
+      }
+
+      //switch expression (for default case we need to use _)
+      query = sort switch {
+        "priceAsc" => query.OrderBy(p => p.Price),
+        "priceDsc" => query.OrderByDescending(p => p.Price),
+        _ => query.OrderBy(p => p.Name)
+      };
+
+      return await query.ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<string>> GetTypesAsync() {
+      return await _context.Products.Select(p => p.Type).Distinct().ToListAsync();
     }
 
     public bool ProductExists(int id) {
