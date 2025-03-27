@@ -1,5 +1,6 @@
 ﻿using Core.Entities;
 using Core.Interfaces;
+using Core.Specifications;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers {
@@ -7,17 +8,18 @@ namespace API.Controllers {
   [Route("api/[controller]")]
   public class ProductsController : ControllerBase {
     //private readonly StoreContext context;
-    private readonly IProductRepository _productRepository;
     private readonly IGenericRepository<Product> _genericRepository;
 
     public ProductsController(IProductRepository productRepository, IGenericRepository<Product> genericRepository) {
-      _productRepository = productRepository;
       _genericRepository = genericRepository;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts(string? brand,string? type, string? sort) {
-      return Ok(await _productRepository.GetProductsAsync(brand,type,sort));
+    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts(string? brand, string? type, string? sort) {
+      var spec = new ProductSpecification(brand, type, sort);
+      var products = _genericRepository.ListAsync(spec);
+
+      return Ok(await products);
     }
 
     [HttpGet("{id:int}")]
@@ -32,7 +34,7 @@ namespace API.Controllers {
     public async Task<ActionResult<Product>> CreateProduct(Product product) {
       _genericRepository.Add(product);
       if (await _genericRepository.SaveAllAsync()) {
-        return CreatedAtAction("GetProduct",new { id = product.Id},product);
+        return CreatedAtAction("GetProduct", new { id = product.Id }, product);
       }
       return BadRequest("Product not created");
     }
@@ -66,13 +68,17 @@ namespace API.Controllers {
 
     [HttpGet("brands")]
     public async Task<ActionResult<IReadOnlyList<string>>> GetBrands() {
-      return Ok(await _productRepository.GetBrandsAsync());
+      var specification = new BrandSpecification();
+
+      return Ok(await _genericRepository.ListAsync(specification));
     }
 
     [HttpGet("types")]
     public async Task<ActionResult<IReadOnlyList<string>>> GetTypes() {
-      return Ok(await _productRepository.GetTypesAsync());
-    } 
+      var specification = new TypeSpecification();
+
+      return Ok(await _genericRepository.ListAsync(specification));
+    }
 
     private bool ProductExists(Product product) {
       return _genericRepository.Exists(product.Id);
