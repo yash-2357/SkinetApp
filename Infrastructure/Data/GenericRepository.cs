@@ -57,5 +57,12 @@ namespace Infrastructure.Data {
     public async Task<TResult?> GetEntityWithSpec<TResult>(ISpecification<T, TResult> specification) {
       return await ApplySpecification(specification).FirstOrDefaultAsync();
     }
+
+    public async Task<int> CountAsync(ISpecification<T> spec) {
+      var query = context.Set<T>().AsQueryable();
+      query = spec.ApplyCriteria(query);
+
+      return await query.CountAsync();
+    }
   }
 }
