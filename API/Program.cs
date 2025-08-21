@@ -1,3 +1,4 @@
+using API.Middleware;
 using Core.Interfaces;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +29,7 @@ var app = builder.Build(); //things before this line are services and things aft
 // app.UseHttpsRedirection();
 
 // app.UseAuthorization();
-
+app.UseMiddleware<ExceptionMiddleware>();
 app.MapControllers();
 
 //the below code applies the remaining migrations to DB and creates a new DB if DB doednot exists.
